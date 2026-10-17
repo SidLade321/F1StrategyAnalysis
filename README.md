@@ -1,6 +1,10 @@
 # Did the hard tyre cost Leclerc the 2022 Hungarian GP?
 
-A Python analysis of real Formula 1 timing data (via [FastF1](https://github.com/theOehrly/Fast-F1)) testing whether Ferrari's decision to fit hard tyres to Charles Leclerc at the 2022 Hungarian Grand Prix cost him the race result.
+**Short answer: very likely yes.** Leclerc's hard tyres degraded about 3× faster than the field average. A lap-by-lap race simulation puts him P1–P4 on fresh mediums (central estimate **P2**) instead of his actual **P6**.
+
+![Hard vs medium strategy comparison](figures/strategy_hard_vs_medium.png)
+
+A Python analysis of real Formula 1 timing data, using [FastF1](https://github.com/theOehrly/Fast-F1), testing whether Ferrari's decision to fit hard tyres to Charles Leclerc at the 2022 Hungarian Grand Prix cost him the result.
 
 ## Key findings
 
