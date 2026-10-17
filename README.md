@@ -10,7 +10,7 @@
 - **Measured how much faster a car must be to overtake** at the Hungaroring, from **285 close battles** in the 2021 and 2022 races, instead of guessing a number.
 - **Showed that the 2022 ground-effect cars could overtake far more easily.** They needed a pace advantage of about **1.4 s/lap** to pass, compared with **3.3 s/lap** for the 2021 cars.
 - **Lap-by-lap race simulator** that reproduces Leclerc's real finishing position to within 0.1 s, then replays the race with a different tyre choice.
-- **Every key result is stress-tested**: fuel effect, overtaking difficulty and hold-out validation, with limitations stated openly.
+- **Every key result is stress-tested**: fuel effect, overtaking difficulty, alternative tyre wear models and hold-out validation, with limitations stated openly.
 
 Built in Python with [FastF1](https://github.com/theOehrly/Fast-F1), pandas, NumPy, SciPy, scikit-learn and Matplotlib.
 
@@ -21,6 +21,19 @@ Built in Python with [FastF1](https://github.com/theOehrly/Fast-F1), pandas, Num
 - **Overtaking in 2022 needed less than half the pace advantage it did in 2021:** **1.42 s/lap** (95% CI 1.24–1.61 s) against **3.28 s/lap** (95% CI 2.82–3.88 s).
 - **At the measured 2022 threshold, Leclerc finishes P2–P4 instead of P6:** P2 at fuel effects of 0.055 and 0.08 s/lap, P4 at 0.03 s/lap. That's 2.7–15.1 s gained over the rest of the race.
 - **The degradation model holds up on unseen data.** Fitted on the first 60% of each stint, it predicts the remaining laps with an RMS error of 0.78 s, against 1.02 s for a no-wear baseline. It beats the baseline in 73% of 55 stints.
+- **A straight-line wear model beats curved alternatives.** Tested against quadratic and "cliff" (two-slope) models across 55 stints, linear forecasts unseen laps best (mean RMS 0.78 s, against 1.23 s for cliff and 1.66 s for quadratic) and is preferred by BIC in 62% of stints. Curved models overfit the noise and extrapolate badly. The one exception is softs, where the cliff model edges ahead (0.94 vs 1.00 s), a hint of the classic soft-tyre drop-off. On Leclerc's hard stint linear is clearly best (0.39 s vs 1.23 and 2.00 s), so the main result doesn't depend on the wear model.
+
+## Race simulation results
+
+Leclerc's finishing position with fresh mediums instead of hards, at the **measured** 2022 overtaking threshold (1.24–1.61 s/lap gave identical results):
+
+| Fuel effect (s/lap) | Real strategy (sim) | Fresh mediums (sim) | Time gained |
+|---|---|---|---|
+| 0.03 | P6 | **P4** | 2.7 s |
+| 0.055 (central) | P6 | **P2** | 11.8 s |
+| 0.08 | P6 | **P2** | 15.1 s |
+
+The "real strategy" column replays what actually happened and matches his real P6, which confirms the simulator is calibrated before any changes are made. Across a wider assumed range of overtaking thresholds (0.5–2.0 s/lap), the result stays between P1 and P4.
 
 ## Measuring overtaking difficulty: 2021 vs 2022
 
@@ -44,6 +57,24 @@ A race simulation is only as good as its overtaking rule. A faster car can't jus
 
 The measured 2022 threshold then feeds directly into the race simulation.
 
+## Validation
+
+A "what if" can't be checked directly, because Leclerc never ran those mediums. So each part of the model is validated on its own, and every assumption is stress-tested to show the headline doesn't hinge on any single guess.
+
+| What | How it was checked | Result |
+|---|---|---|
+| Data cleaning | Cleaned laps plotted to confirm pit, safety car and outlier laps were removed | ✔ Visual check |
+| Degradation rates | Standard error on every fitted slope | Leclerc's hards 0.152 ± 0.044 s/lap, clearly above the field's 0.047 |
+| Degradation model | Fit on the first 60% of each stint, predict the last 40%, compare with a no-wear baseline | RMS 0.78 s vs 1.02 s; better in 73% of 55 stints |
+| Choice of wear model | Linear vs quadratic vs cliff, by hold-out RMS and BIC | Linear best overall; on Leclerc's hard stint 0.39 s vs 1.23 and 2.00 s |
+| Fuel effect (assumed) | Everything re-run from 0.03 to 0.08 s/lap | Leclerc gains time in every case |
+| Race simulator | Real strategy replayed and compared with the real result | Reproduces P6 to within 0.1 s |
+| Detected overtakes | Passes spot-checked against real race events (e.g. Verstappen on Leclerc, Hamilton on Russell, 2022) | ✔ Match |
+| Overtaking threshold | 1,000 bootstrap resamples for 95% confidence intervals | 2021 and 2022 intervals don't overlap, so the difference is real, not noise |
+| Overtaking difficulty (assumed → measured) | Sim run across 0.5–2.0 s/lap and at the measured threshold | P1–P4 throughout; P2–P4 at measured values |
+
+**Not validated:** how rivals would have reacted to a faster Leclerc, and the slight upward bias in the threshold from defending laps (see Limitations).
+
 ## Method
 
 1. **Data:** lap times, tyre compound, tyre age and track status for all 20 drivers, from FastF1.
@@ -52,8 +83,9 @@ The measured 2022 threshold then feeds directly into the race simulation.
 4. **Degradation:** a linear fit of fuel-corrected lap time against tyre age for every stint, with the standard error of the slope.
 5. **Strategy comparison:** Leclerc's hard stint compared with his own fresh-medium stint (stint 2) over the same tyre ages.
 6. **Overtaking threshold:** measured from 2021–2022 battle data (see the section above).
-7. **Race simulation:** rivals are replayed from real timing data, and Leclerc's laps 41–53 are adjusted by the modelled hard-vs-medium gap. He can only pass the car ahead if he is faster that lap by more than the overtaking threshold; otherwise he is held 0.5 s behind. Replaying the real strategy, the simulator reproduces his actual P6 to within 0.1 s.
+7. **Race simulation:** rivals are replayed from real timing data, and Leclerc's laps 41–53 are adjusted by the modelled hard-vs-medium gap. He can only pass the car ahead if he is faster that lap by more than the overtaking threshold; otherwise he is held 0.5 s behind.
 8. **Validation:** each stint is split 60/40, the model is fitted on the first part and scored on the rest against a no-wear baseline.
+9. **Wear model comparison:** linear, quadratic and cliff (two straight lines joined at a breakpoint found by grid search) models compared on every stint by hold-out RMS and by BIC, which penalises extra parameters.
 
 ## Figures
 
@@ -65,10 +97,14 @@ The measured 2022 threshold then feeds directly into the race simulation.
 |---|---|
 | ![Field degradation](figures/field_degradation.png) | ![Validation](figures/validation.png) |
 
+**Linear vs quadratic vs cliff wear models (Leclerc's stints)**
+
+![Wear model comparison](figures/degradation_models.png)
+
 ## Limitations
 
 - **Rivals don't react.** A faster Leclerc may have triggered strategy responses from Red Bull and Mercedes, so P2 is closer to a best case.
-- **Degradation is modelled as linear**, so tyre "cliffs" aren't captured. This is why soft-tyre laps are predicted worst.
+- **Tyre cliffs can't be forecast.** A cliff model fits about a quarter of stints better in hindsight (by BIC), but can't predict the drop-off from a stint's early laps, so linear remains the best forecaster.
 - **Leclerc's hard stint is short** (11 clean laps), hence the wide error bar on its degradation rate.
 - **The two medium stints differ in base pace by 0.3–1.3 s**, likely due to traffic, so the fuel effect can't be calibrated from this race alone.
 - **The overtaking comparison uses two races.** F1's live timing API stopped serving sessions that weren't already cached locally, which limited the data to 2021 and 2022. The 2021 race also had a wet, chaotic start, so not all of the difference can be put down to the new cars. The result is *consistent with* ground effect making overtaking easier, not proof of it.
@@ -77,7 +113,6 @@ The measured 2022 threshold then feeds directly into the race simulation.
 
 ## Future work
 
-- A non-linear (e.g. quadratic) degradation model to capture tyre cliffs
 - Measure overtaking thresholds at other circuits and seasons as more data becomes available
 - Apply the method to other contested strategy calls
 
@@ -87,12 +122,13 @@ The measured 2022 threshold then feeds directly into the race simulation.
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-python deg_all_drivers.py      # field-wide degradation
-python simulate_strategy.py    # hard vs medium comparison
-python battles.py              # detect close battles and passes (2021–2022)
-python fit_threshold.py        # fit the overtaking threshold
-python race_sim.py 0.055       # race simulation (argument = fuel effect, s/lap)
-python validate.py             # hold-out validation
+python deg_all_drivers.py        # field-wide degradation
+python simulate_strategy.py      # hard vs medium comparison
+python battles.py                # detect close battles and passes (2021–2022)
+python fit_threshold.py          # fit the overtaking threshold
+python race_sim.py 0.055         # race simulation (argument = fuel effect, s/lap)
+python validate.py               # hold-out validation
+python degradation_models.py     # linear vs quadratic vs cliff wear models
 ```
 
 Race data downloads automatically on the first run and is cached locally.
@@ -105,3 +141,7 @@ Race data downloads automatically on the first run and is cached locally.
 | `clean_laps.py` | Lap cleaning and filtering |
 | `deg_model.py` | Leclerc's tyre degradation model |
 | `sensitivity.py` | Fuel-effect sensitivity test |
+
+---
+
+**Author:** Sai Sidhanth (Sid) Lade, BEng Acoustical Engineering, University of Southampton · [LinkedIn](https://www.linkedin.com/in/sai-sidhanth-lade-706869357/)
