@@ -71,9 +71,9 @@ real_final = lec_real.loc[TOTAL_LAPS]
 print(f"REAL race: P{finishing_position(real_final)}\n")
 
 print(f"{'Pass needs':>10} | {'Baseline sim':>14} | {'Mediums sim':>14} | {'Time gained':>11}")
-for threshold in [0.5, 1.0, 1.5, 2.0]:
+for threshold in [0.5, 1.24, 1.42, 1.61, 2.0]:
     base = simulate(threshold, swap_to_mediums=False)
     alt = simulate(threshold, swap_to_mediums=True)
-    print(f"{threshold:>8.1f} s | P{finishing_position(base):<2} "
+    print(f"{threshold:>8.2f} s | P{finishing_position(base):<2} "
           f"({base - real_final:+6.1f} s) | P{finishing_position(alt):<2} "
           f"({alt - real_final:+6.1f} s) | {base - alt:>+9.1f} s")
