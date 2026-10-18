@@ -144,4 +144,7 @@ Race data downloads automatically on the first run and is cached locally.
 
 ---
 
-**Author:** Sai Sidhanth (Sid) Lade, BEng Acoustical Engineering, University of Southampton · [LinkedIn](https://www.linkedin.com/in/sai-sidhanth-lade-706869357/)
+## Author
+
+**Sai Sidhanth Lade** — BEng Acoustical Engineering, University of Southampton 
+[LinkedIn](https://www.linkedin.com/in/sai-sidhanth-lade-706869357/) · [GitHub](https://github.com/SidLade321)
